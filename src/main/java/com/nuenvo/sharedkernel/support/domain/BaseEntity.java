@@ -2,7 +2,6 @@ package com.nuenvo.sharedkernel.support.domain;
 
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -32,14 +31,6 @@ public abstract class BaseEntity {
 
     this.uuid = UUID.randomUUID().toString();
   }
-
-  @Id
-  @GeneratedValue(
-    strategy = GenerationType.SEQUENCE,
-    generator = "default_gen"
-  )
-  @Getter
-  private Long id;
 
   @Column(
     unique = true,

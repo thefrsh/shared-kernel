@@ -1,10 +1,14 @@
 package com.nuenvo.sharedkernel.support.infrastructure;
 
 import com.nuenvo.sharedkernel.support.domain.BaseAggregateRoot;
+import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaRepositoryImplementation;
+import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +29,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseRepository<T extends BaseAggregateRoot> {
 
-  private final String name;
+  protected final Class<T> type;
 
-  private final Injector<T> injector;
+  @PersistenceContext
+  protected EntityManager manager;
 
-  private final JpaRepositoryImplementation<T, Long> repository;
+  protected JpaRepositoryImplementation<T, Long> repository;
+
+  @PostConstruct
+  protected void init() {
+
+    repository = new SimpleJpaRepository<>(type, manager);
+  }
 
   /**
    * Returns an instance of an Aggregate Root defined by id param
@@ -48,13 +59,11 @@ public abstract class BaseRepository<T extends BaseAggregateRoot> {
     Specification<T> specification
   ) throws ResourceNotFoundException {
 
-    var root = repository
+    return repository
       .findOne(specification)
       .orElseThrow(() -> new ResourceNotFoundException(
-        String.format("%s has not been found", name)
+        String.format("%s has not been found", type.getSimpleName())
       ));
-
-    return injector.inject(root);
   }
 
   /**
@@ -63,6 +72,9 @@ public abstract class BaseRepository<T extends BaseAggregateRoot> {
    * @param root An instance of the Aggregate Root to be persisted
    * @return Persisted entity of type T
    */
+  @Transactional(
+    propagation = Propagation.SUPPORTS
+  )
   public T save(T root) {
 
     return repository.save(root);
